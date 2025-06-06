@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Link Extractor</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #333;
+      margin: 20px;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+    }
+    .link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .progress-container {
+      width: 100%;
+      background: #eee;
+      border-radius: 5px;
+      margin: 10px 0;
+      display: none;
+    }
+    .progress-bar {
+      height: 20px;
+      background: #28a745;
+      width: 0%;
+      border-radius: 5px;
+      text-align: center;
+      color: white;
+    }
+    video, canvas {
+      display: none;
+    }
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      padding: 12px;
+      position: fixed;
+      z-index: 1;
+      bottom: 30px;
+      font-size: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #toast.show {
+      visibility: visible;
+      animation: fadein 0.5s, fadeout 0.5s 2s;
+    }
+    @keyframes fadein {
+      from { bottom: 0; opacity: 0; }
+      to { bottom: 30px; opacity: 1; }
+    }
+    @keyframes fadeout {
+      from { bottom: 30px; opacity: 1; }
+      to { bottom: 0; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Image Link Extractor</h1>
+  <div class="container">
+    <div class="buttons">
+      <label><button onclick="document.getElementById('imageInput').click()">Select Image</button></label>
+      <button onclick="captureFromCamera()">Capture from Camera</button>
+      <button onclick="downloadLinksAsText()">Download Links as Text</button>
+      <input type="file" id="imageInput" accept="image/*" />
+    </div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <div id="linkList"></div>
+
+    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+  </div>
+
+  <div id="toast">Links downloaded successfully!</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const progressBar = document.getElementById("progressBar");
+    const progressContainer = document.getElementById("progressContainer");
+    const linkList = document.getElementById("linkList");
+    const toast = document.getElementById("toast");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    let extractedLinks = [];
+
+    function showProgress(percent) {
+      progressBar.style.width = percent + "%";
+      progressBar.textContent = percent + "%";
+    }
+
+    function toggleProgress(show) {
+      progressContainer.style.display = show ? "block" : "none";
+    }
+
+    function showToast() {
+      toast.className = "show";
+      setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
+    }
+
+    imageInput.addEventListener("change", () => {
+      if (imageInput.files.length > 0) {
+        const file = imageInput.files[0];
+        const img = new Image();
+        const reader = new FileReader();
+
+        toggleProgress(true);
+        showProgress(5);
+
+        reader.onload = () => {
+          img.src = reader.result;
+          img.onload = () => processImage(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function extractLinks(text) {
+      const regex = /((?:https?:\/\/|www\.)\S+|\b\S+\.[a-zA-Z]{2,}\b)/g;
+      return [...new Set((text.match(regex) || []).filter(link => link.length > 5))];
+    }
+
+    async function processImage(image) {
+      toggleProgress(true);
+      showProgress(10);
+      linkList.innerHTML = "Processing image...";
+
+      const result = await Tesseract.recognize(image, 'eng', {
+        logger: ({ progress }) => showProgress(Math.floor(progress * 100))
+      });
+
+      showProgress(100);
+      toggleProgress(false);
+
+      const text = result.data.text;
+      extractedLinks = extractLinks(text);
+
+      if (extractedLinks.length > 0) {
+        linkList.innerHTML = extractedLinks.map(link => `
+          <div class="link">
+            <a href="${link.startsWith('http') ? link : 'http://' + link}" target="_blank">${link}</a>
+            <button onclick="window.open('${link.startsWith('http') ? link : 'http://' + link}', '_blank')">Visit</button>
+          </div>
+        `).join("");
+      } else {
+        linkList.innerHTML = "<p>No valid links found.</p>";
+      }
+    }
+
+    async function captureFromCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } }
+        });
+
+        video.srcObject = stream;
+        video.style.display = "block";
+
+        await new Promise(resolve => video.onloadedmetadata = resolve);
+
+        setTimeout(() => {
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const img = new Image();
+          img.src = canvas.toDataURL();
+          img.onload = () => processImage(img);
+
+          video.style.display = "none";
+          stream.getTracks().forEach(track => track.stop());
+        }, 1500);
+      } catch (err) {
+        alert("Camera access denied or not available.");
+        console.error(err);
+      }
+    }
+
+    function downloadLinksAsText() {
+      if (extractedLinks.length === 0) {
+        alert("No links to download.");
+        return;
+      }
+      const blob = new Blob([extractedLinks.join("\n")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "extracted_links.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast();
+    }
+  </script>
+</body>
+</html>
