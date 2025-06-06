@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔗Image Link Extractor</title>
+  <title>Image Link Extractor</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -107,7 +107,7 @@
   </style>
 </head>
 <body>
-  <h1>🔗Link Extractor</h1>
+  <h1>Image Link Extractor</h1>
   <div class="container">
     <div class="buttons">
       <label><button onclick="document.getElementById('imageInput').click()">Select Image</button></label>
@@ -122,7 +122,7 @@
 
     <div id="linkList"></div>
 
-    <video id="video" width="640" height="480" autoplay></video>
+    <video id="video" width="640" height="480" autoplay playsinline></video>
     <canvas id="canvas" width="640" height="480"></canvas>
   </div>
 
@@ -135,6 +135,9 @@
     const progressContainer = document.getElementById("progressContainer");
     const linkList = document.getElementById("linkList");
     const toast = document.getElementById("toast");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
     let extractedLinks = [];
 
     function showProgress(percent) {
@@ -157,6 +160,9 @@
         const img = new Image();
         const reader = new FileReader();
 
+        toggleProgress(true);
+        showProgress(5);
+
         reader.onload = () => {
           img.src = reader.result;
           img.onload = () => processImage(img);
@@ -166,7 +172,7 @@
     });
 
     function extractLinks(text) {
-      const regex = /(https?:\/\/\S+|\b\S+\.\S+\b)/g;
+      const regex = /(https?:\/\/\S+|www\.\S+|\b\S+\.[a-zA-Z]{2,}\b)/g;
       return [...new Set(text.match(regex) || [])];
     }
 
@@ -198,27 +204,32 @@
     }
 
     async function captureFromCamera() {
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const context = canvas.getContext("2d");
-
       try {
-        // const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } }
+          video: { facingMode: { exact: "environment" } }
         });
+
         video.srcObject = stream;
         video.style.display = "block";
 
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Wait for video to be ready
+        await new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            resolve();
+          };
+        });
 
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const img = new Image();
-        img.src = canvas.toDataURL();
-        img.onload = () => processImage(img);
+        // Take snapshot after short delay
+        setTimeout(() => {
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const img = new Image();
+          img.src = canvas.toDataURL();
+          img.onload = () => processImage(img);
 
-        video.style.display = "none";
-        stream.getTracks().forEach(track => track.stop());
+          video.style.display = "none";
+          stream.getTracks().forEach(track => track.stop());
+        }, 1000);
+
       } catch (err) {
         alert("Camera access denied or not available.");
         console.error(err);
