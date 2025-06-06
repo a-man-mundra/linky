@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Link Extractor</title>
+  <title>🔗Image Link Extractor</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -107,7 +107,7 @@
   </style>
 </head>
 <body>
-  <h1>Image Link Extractor</h1>
+  <h1>🔗Link Extractor</h1>
   <div class="container">
     <div class="buttons">
       <label><button onclick="document.getElementById('imageInput').click()">Select Image</button></label>
@@ -203,7 +203,10 @@
       const context = canvas.getContext("2d");
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } }
+        });
         video.srcObject = stream;
         video.style.display = "block";
 
