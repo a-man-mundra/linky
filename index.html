@@ -172,8 +172,8 @@
     });
 
     function extractLinks(text) {
-      const regex = /(https?:\/\/\S+|www\.\S+|\b\S+\.[a-zA-Z]{2,}\b)/g;
-      return [...new Set(text.match(regex) || [])];
+      const regex = /((?:https?:\/\/|www\.)\S+|\b\S+\.[a-zA-Z]{2,}\b)/g;
+      return [...new Set((text.match(regex) || []).filter(link => link.length > 5))];
     }
 
     async function processImage(image) {
@@ -206,20 +206,14 @@
     async function captureFromCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } }
+          video: { facingMode: { ideal: "environment" } }
         });
 
         video.srcObject = stream;
         video.style.display = "block";
 
-        // Wait for video to be ready
-        await new Promise(resolve => {
-          video.onloadedmetadata = () => {
-            resolve();
-          };
-        });
+        await new Promise(resolve => video.onloadedmetadata = resolve);
 
-        // Take snapshot after short delay
         setTimeout(() => {
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
           const img = new Image();
@@ -228,8 +222,7 @@
 
           video.style.display = "none";
           stream.getTracks().forEach(track => track.stop());
-        }, 1000);
-
+        }, 1500);
       } catch (err) {
         alert("Camera access denied or not available.");
         console.error(err);
