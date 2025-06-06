@@ -1,248 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Link Extractor</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    h1 {
-      color: #333;
-      margin: 20px;
-    }
-    .container {
-      width: 90%;
-      max-width: 800px;
-      background: white;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-    }
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    .link {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      border-bottom: 1px solid #ccc;
-    }
-    .link a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .progress-container {
-      width: 100%;
-      background: #eee;
-      border-radius: 5px;
-      margin: 10px 0;
-      display: none;
-    }
-    .progress-bar {
-      height: 20px;
-      background: #28a745;
-      width: 0%;
-      border-radius: 5px;
-      text-align: center;
-      color: white;
-    }
-    video, canvas {
-      display: none;
-    }
-    #toast {
-      visibility: hidden;
-      min-width: 250px;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      border-radius: 4px;
-      padding: 12px;
-      position: fixed;
-      z-index: 1;
-      bottom: 30px;
-      font-size: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    #toast.show {
-      visibility: visible;
-      animation: fadein 0.5s, fadeout 0.5s 2s;
-    }
-    @keyframes fadein {
-      from { bottom: 0; opacity: 0; }
-      to { bottom: 30px; opacity: 1; }
-    }
-    @keyframes fadeout {
-      from { bottom: 30px; opacity: 1; }
-      to { bottom: 0; opacity: 0; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Link Extractor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Aligned to top */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1877f2;
+            margin-bottom: 1.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #166fe5;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .image-container {
+            margin-top: 1.5rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            min-height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9f9f9;
+        }
+        
+        #image-display, #preprocessed-canvas {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+
+        #status {
+            margin-top: 1.5rem;
+            font-weight: 500;
+            color: #65676b;
+            min-height: 20px;
+        }
+
+        #links-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #f7f7f7;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: left;
+            min-height: 50px;
+            word-wrap: break-word;
+        }
+
+        #links-box h3 {
+            margin-top: 0;
+            color: #1877f2;
+        }
+
+        #links-list a {
+            display: block;
+            color: #1877f2;
+            text-decoration: none;
+            padding: 5px 0;
+        }
+
+        #links-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-  <h1>Image Link Extractor</h1>
-  <div class="container">
-    <div class="buttons">
-      <label><button onclick="document.getElementById('imageInput').click()">Select Image</button></label>
-      <button onclick="captureFromCamera()">Capture from Camera</button>
-      <button onclick="downloadLinksAsText()">Download Links as Text</button>
-      <input type="file" id="imageInput" accept="image/*" />
+
+    <div class="container">
+        <h1>🔗 Advanced Link Extractor</h1>
+        <p>Extracts links from any image, even old or grainy ones.</p>
+        <div class="button-group">
+            <button class="btn" onclick="openCamera()">📷 Capture Image</button>
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+            <label for="fileInput" class="btn">📂 Choose File</label>
+        </div>
+
+        <div class="image-container">
+            <img id="image-display" src="" alt="Selected or captured image will appear here." style="display:none;">
+            <canvas id="preprocessed-canvas"></canvas>
+        </div>
+        
+        <div id="status">Select an image to begin.</div>
+
+        <div id="links-box">
+            <h3>Available Links:</h3>
+            <div id="links-list">No links found yet.</div>
+        </div>
     </div>
 
-    <div class="progress-container" id="progressContainer">
-      <div class="progress-bar" id="progressBar">0%</div>
-    </div>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
-    <div id="linkList"></div>
+    <script>
+        const imageDisplay = document.getElementById('image-display');
+        const preprocessedCanvas = document.getElementById('preprocessed-canvas');
+        const statusDiv = document.getElementById('status');
+        const linksList = document.getElementById('links-list');
+        let worker;
 
-    <video id="video" width="640" height="480" autoplay playsinline></video>
-    <canvas id="canvas" width="640" height="480"></canvas>
-  </div>
+        // Initialize the Tesseract worker
+        async function initializeTesseract() {
+            statusDiv.textContent = 'Loading AI model...';
+            worker = await Tesseract.createWorker('eng', 1, {
+                logger: m => console.log(m) // Logs progress
+            });
+            statusDiv.textContent = 'AI model loaded. Ready to process images.';
+        }
+        initializeTesseract();
 
-  <div id="toast">Links downloaded successfully!</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
-  <script>
-    const imageInput = document.getElementById("imageInput");
-    const progressBar = document.getElementById("progressBar");
-    const progressContainer = document.getElementById("progressContainer");
-    const linkList = document.getElementById("linkList");
-    const toast = document.getElementById("toast");
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const context = canvas.getContext("2d");
-    let extractedLinks = [];
+        async function openCamera() {
+             if (!worker) {
+                statusDiv.textContent = 'Please wait for the AI model to load.';
+                return;
+            }
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', true);
+                    video.play();
 
-    function showProgress(percent) {
-      progressBar.style.width = percent + "%";
-      progressBar.textContent = percent + "%";
-    }
+                    const takePicture = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        const imageUrl = canvas.toDataURL('image/png');
+                        imageDisplay.src = imageUrl;
+                        stream.getTracks().forEach(track => track.stop());
+                        document.body.removeChild(video);
+                        document.body.removeChild(captureButton);
+                        processImage(imageUrl);
+                    };
 
-    function toggleProgress(show) {
-      progressContainer.style.display = show ? "block" : "none";
-    }
+                    const captureButton = document.createElement('button');
+                    captureButton.textContent = 'Capture';
+                    captureButton.className = 'btn';
+                    Object.assign(captureButton.style, {position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 10});
+                    captureButton.onclick = takePicture;
+                    
+                    document.body.appendChild(captureButton);
+                    
+                    Object.assign(video.style, {position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'});
+                    document.body.appendChild(video);
 
-    function showToast() {
-      toast.className = "show";
-      setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2500);
-    }
+                } catch (error) {
+                    console.error("Error accessing camera: ", error);
+                    statusDiv.textContent = 'Error accessing camera. Please ensure permissions are granted.';
+                }
+            } else {
+                statusDiv.textContent = 'Camera not supported by this browser.';
+            }
+        }
+        
+        function handleFileSelect(event) {
+             if (!worker) {
+                statusDiv.textContent = 'Please wait for the AI model to load.';
+                return;
+            }
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageDisplay.src = e.target.result;
+                    processImage(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
 
-    imageInput.addEventListener("change", () => {
-      if (imageInput.files.length > 0) {
-        const file = imageInput.files[0];
-        const img = new Image();
-        const reader = new FileReader();
+        /**
+         * NEW: Pre-processes the image for better OCR results on grainy/old images.
+         * It applies grayscale and contrast filters.
+         */
+        function preprocessImage(imgElement) {
+            const canvas = preprocessedCanvas;
+            const ctx = canvas.getContext('2d');
+            canvas.width = imgElement.naturalWidth;
+            canvas.height = imgElement.naturalHeight;
+            ctx.drawImage(imgElement, 0, 0);
 
-        toggleProgress(true);
-        showProgress(5);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            // Grayscale and Contrast
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                let value = avg;
+                // Basic contrast adjustment
+                const contrast = 1.5; 
+                value = ((((value / 255) - 0.5) * contrast) + 0.5) * 255;
+                
+                data[i] = value;     // red
+                data[i + 1] = value; // green
+                data[i + 2] = value; // blue
+            }
+            ctx.putImageData(imageData, 0, 0);
+            return canvas;
+        }
 
-        reader.onload = () => {
-          img.src = reader.result;
-          img.onload = () => processImage(img);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+        async function processImage(imageSrc) {
+            linksList.innerHTML = 'Starting image processing...';
+            imageDisplay.src = imageSrc;
+            imageDisplay.style.display = 'none'; // Hide original
+            preprocessedCanvas.style.display = 'block';
 
-    function extractLinks(text) {
-      const regex = /((?:https?:\/\/|www\.)\S+|\b\S+\.[a-zA-Z]{2,}\b)/g;
-      return [...new Set((text.match(regex) || []).filter(link => link.length > 5))];
-    }
+            imageDisplay.onload = async () => {
+                try {
+                    statusDiv.textContent = 'Enhancing image for AI...';
+                    const processedCanvas = preprocessImage(imageDisplay);
 
-    async function processImage(image) {
-      toggleProgress(true);
-      showProgress(10);
-      linkList.innerHTML = "Processing image...";
+                    statusDiv.textContent = 'Recognizing text... this may take a moment.';
+                    const { data: { text } } = await worker.recognize(processedCanvas);
 
-      const result = await Tesseract.recognize(image, 'eng', {
-        logger: ({ progress }) => showProgress(Math.floor(progress * 100))
-      });
+                    statusDiv.textContent = 'Text recognized! Searching for links...';
+                    const links = extractLinks(text);
 
-      showProgress(100);
-      toggleProgress(false);
+                    if (links.length > 0) {
+                        linksList.innerHTML = ''; // Clear previous links
+                        links.forEach(link => {
+                            const a = document.createElement('a');
+                            a.href = link.startsWith('http') ? link : `https://${link}`;
+                            a.target = '_blank';
+                            a.rel = 'noopener noreferrer';
+                            a.textContent = link;
+                            linksList.appendChild(a);
+                        });
+                        statusDiv.textContent = `Success! Found ${links.length} link(s).`;
+                    } else {
+                        linksList.innerHTML = 'No valid links found in the image.';
+                        statusDiv.textContent = 'Recognition complete. No links found.';
+                    }
 
-      const text = result.data.text;
-      extractedLinks = extractLinks(text);
+                } catch (error) {
+                    console.error('Error during OCR process:', error);
+                    statusDiv.textContent = 'Could not process the image. Please try again.';
+                    linksList.innerHTML = 'Failed to extract links.';
+                }
+            };
+        }
 
-      if (extractedLinks.length > 0) {
-        linkList.innerHTML = extractedLinks.map(link => `
-          <div class="link">
-            <a href="${link.startsWith('http') ? link : 'http://' + link}" target="_blank">${link}</a>
-            <button onclick="window.open('${link.startsWith('http') ? link : 'http://' + link}', '_blank')">Visit</button>
-          </div>
-        `).join("");
-      } else {
-        linkList.innerHTML = "<p>No valid links found.</p>";
-      }
-    }
+        /**
+         * UPDATED: Regular expression to capture a wider range of valid links.
+         */
+        function extractLinks(text) {
+            console.log("Extracted Text:", text);
+            // Regex for http, https, www, or domain.tld formats
+            const urlRegex = /((?:https?:\/\/|www\.)[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=%]+\.[a-zA-Z]{2,}|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})/gi;
+            const matches = text.match(urlRegex) || [];
+            // Clean up results to remove trailing dots that are not part of the URL
+            return matches.map(link => link.endsWith('.') ? link.slice(0, -1) : link);
+        }
+    </script>
 
-    async function captureFromCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }
-        });
-
-        video.srcObject = stream;
-        video.style.display = "block";
-
-        await new Promise(resolve => video.onloadedmetadata = resolve);
-
-        setTimeout(() => {
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const img = new Image();
-          img.src = canvas.toDataURL();
-          img.onload = () => processImage(img);
-
-          video.style.display = "none";
-          stream.getTracks().forEach(track => track.stop());
-        }, 1500);
-      } catch (err) {
-        alert("Camera access denied or not available.");
-        console.error(err);
-      }
-    }
-
-    function downloadLinksAsText() {
-      if (extractedLinks.length === 0) {
-        alert("No links to download.");
-        return;
-      }
-      const blob = new Blob([extractedLinks.join("\n")], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "extracted_links.txt";
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast();
-    }
-  </script>
 </body>
 </html>
